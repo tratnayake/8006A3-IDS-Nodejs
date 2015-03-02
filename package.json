@@ -1,0 +1,33 @@
+{
+  "name": "IDPS.js",
+  "version": "0.0.0",
+  "description": "An intrusion detection and prevention system that detects failed SSH login attempts via watching the /var/log/secure file. After a certain number of attempts within a certain interval, triggers a firewall block rule",
+  "main": "IDPS.js",
+  "dependencies": {
+    "file-tail": "~0.3.0",
+    "fs-tail": "~0.0.4",
+    "node-tail": "~0.0.4",
+    "moment": "~2.9.0",
+    "tail": "~0.4.0",
+    "shelljs": "~0.3.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/tratnayake/8006-Assignment-3"
+  },
+  "keywords": [
+    "IDPS",
+    "8006",
+    "Assignment",
+    "3"
+  ],
+  "author": "T Ratnayake & Elton Sia",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/tratnayake/8006-Assignment-3/issues"
+  }
+}

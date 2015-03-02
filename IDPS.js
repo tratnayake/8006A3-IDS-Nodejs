@@ -1,10 +1,31 @@
+/*-----------------------------------------------------------------------------------
+--	SOURCE FILE:	IPS.js-   A simple Intrusion Detection and Prevention System that
+--  					 	  tracks intrusions by observing a log file, and then blo-
+							  cks that IP if a user specified number of unsuccessful attempts
+							  are made within a user defined span of time.
+--
+--	DATE:		02 Mar 2015
+--
+--
+--	PROGRAMMERS:	Thilina Ratnayake (A00802338) & Elton Sia (A00800541)
+--
+--	NOTES:
+
+------------------------------------------------------------------------------------*/
+
 var fs = require('fs');
 var ft = require('file-tail').startTailing("/var/log/secure");
-var moment = require('moment');
+var shell = require('shelljs');
+var EventedArray = require('array-events');
+
 
 //=====================DATA STRUCTURES ==============//
+/*---	
 
-var incorrectAttempts = new Array();
+----*/
+
+var incorrectAttempts = new EventedArray();
+var blockedUsers = new EventedArray();
 
 // Constructor
 function userElement(IP) {
@@ -13,7 +34,8 @@ function userElement(IP) {
   this.attempts = new Array();
 }
 // class methods
-userElement.prototype.addAttempt = function(timeStamp) {
+userElement.prototype.addAttempt = function() {
+	var timeStamp = new Date();
 	console.log("addAttempt invoked with data"+timeStamp);
 	this.attempts.push(timeStamp);
 	console.log(this.attempts);
@@ -32,8 +54,25 @@ console.log("The number of attempts to block after is "+numAttempts);
 var timeInterval = arguments[1];
 console.log("Time interval is "+timeInterval);
 
+
+//===================== HELPER FUNCTIONS ==================//
+
+function parseInformation(line){
+	
+}
+
 //===================== MAIN ==================//
- 
+
+
+//
+blockedUsers.on('add',function(event){
+	console.log("The following person has been added to the blockedUsers list");
+	console.log(event);
+
+	
+});
+
+// The actual Main 
 ft.on('line', function(line) {
     if(line.indexOf('Failed password') > -1){
     	console.log("MATCH FOUND!");
@@ -81,7 +120,7 @@ ft.on('line', function(line) {
 			console.log("user elements is empty");
 
 			var user = new userElement(IP);
-			user.addAttempt(timeStamp);
+			user.addAttempt();
 			incorrectAttempts.push(user);
 		}
 
@@ -112,23 +151,40 @@ ft.on('line', function(line) {
 						
 						var currElement = length - 1;
 
-						var firstElement = currElement - numAttempts;
+						var firstElement = currElement - (numAttempts - 1);
 
 						//Get the timestamps
 
-						var currTime = user.attempts[currElement];
+						var currTime = user.attempts[currElement];			
 
-						var firstTime = user.attempts[firstElement];
+						var firstTime = user.attempts[firstElement];			
 
-						//Get the elapsed time
+						var elapsedTime = new Date(currTime - firstTime);
+					
+						
 
-						var elapsedTime = currTime - firstTime;
+
 
 						//E.g if the attempts have occured within (less than) the allowed amount of time.
-						if (elapsedTime <= timeInterval){
+						if (elapsedTime.getMinutes() < timeInterval){
 
-							console.log("BLOCK!");
-							console.log("Clear the array");
+							//console.log("Elapsed time is "+elapsedTime.getMinutes());
+							//console.log("Time interval is"+timeInterval);
+							//console.log("Time")
+
+							console.log("BLOCK! for IP "+user.IP);
+							shell.exec("iptables -A INPUT -s "+user.IP+" -j DROP");
+							console.log("Firewall rule invoked for"+user.IP);
+
+							shell.exec("iptables -L");
+
+							//Take out of incorrectAttempts[]
+
+							//Add to blockedUsers[]
+							blockedUsers.push(user);
+
+
+							
 						}
 						else{
 							console.log("Number of attempts are within the the acceptable timeInterval");
@@ -147,7 +203,7 @@ ft.on('line', function(line) {
 
 						//create a new userElement
 						var user = new UserElement(IP);
-						var user = addAttempt(timeStamp);
+						var user = addAttempt();
 						incorrectAttempts.push(user);
 					}
 
@@ -155,5 +211,11 @@ ft.on('line', function(line) {
 
 			} //End else
 		}
+
+		//Accepted Password
+
+	  if(line.indexOf('Accepted password for root') > -1){
+
+	  }
 
     });
