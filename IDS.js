@@ -41,6 +41,7 @@ ft.on('line', function(line) {
 
 
     	var re = /[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/; 
+    	
     	var m;
     	var IP;
 
@@ -70,6 +71,8 @@ ft.on('line', function(line) {
 
 		console.log("The IP address is "+IP);
 		console.log("The timeStamp is "+timeStamp);
+
+
 
 		//1. Check if it's the first failure EVER
 			//Nothing in incorrectAttempts
@@ -104,15 +107,33 @@ ft.on('line', function(line) {
 
 					}
 					else{
-						console.log("Attempts is"+user.attempts.length);
 
+						var length = user.attempts.length;
+						
+						var currElement = length - 1;
 
-						console.log("BLOCK!");
-						//THIS IS WHERE WE'RE STUCK
-						console.log("Timestamp from"+numAttempts+"back is"+user.attempts[user.attempts.length-2]);
-						console.log("Current time is"+timeStamp);
-						console.log("Calculate time diff here");
+						var firstElement = currElement - numAttempts;
 
+						//Get the timestamps
+
+						var currTime = user.attempts[currElement];
+
+						var firstTime = user.attempts[firstElement];
+
+						//Get the elapsed time
+
+						var elapsedTime = currTime - firstTime;
+
+						//E.g if the attempts have occured within (less than) the allowed amount of time.
+						if (elapsedTime <= timeInterval){
+
+							console.log("BLOCK!");
+							console.log("Clear the array");
+						}
+						else{
+							console.log("Number of attempts are within the the acceptable timeInterval");
+							console.log("--------Do nothing!");
+						}
 
 						break;		
 					}
