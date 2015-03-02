@@ -21,7 +21,7 @@ userElement.prototype.addAttempt = function(timeStamp) {
 // export the class
 module.exports = userElement;
 
-//=====================USER INPUT ==================//
+//===================== USER INPUT ==================//
 //Grab command line arguments
 var arguments = process.argv.slice(2);
 
@@ -32,6 +32,7 @@ console.log("The number of attempts to block after is "+numAttempts);
 var timeInterval = arguments[1];
 console.log("Time interval is "+timeInterval);
 
+//===================== MAIN ==================//
  
 ft.on('line', function(line) {
     if(line.indexOf('Failed password') > -1){

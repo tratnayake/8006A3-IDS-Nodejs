@@ -1,0 +1,73 @@
+//Data Structure
+
+var incorrectAttempts = [userElement]
+
+userElement = {"IP":IPaddress,attempts["timeStamp"]}
+
+
+//Get the IP and TimeStamp
+
+
+//Case 1: FIRST TIME Incorrect Attempt (no entries in the array of userElements)
+
+if length of attempts = 0 {
+	addAttempt(timeStamp);
+}
+	
+
+//Case 2: NOT FIRST TIME
+else{
+	
+	//Case 2A: If there is a userElement with the same IP address
+	if (userAttempts has element with ip){
+
+		addAttempt(timeStamp);
+
+		//Case 2A.1 If the number of attempts is less than the number of attempts to watch for. Let it happen
+
+		if(userElement.attempts.length < numAttempts){
+			-- Do nothing, let it happen
+		}
+
+		//Case 2A.2 If the number of attempts is >= num Attempts, then check if the time duration of the last numAttempts is within the timeStamp.
+
+		else{
+
+			var length = userElement.attempts.length;
+			var currElement = length-1;
+			var beginningElement = currElement -5;
+
+			//Get the timeStamps
+			var currTime =  userElement.attempts[currElement];
+
+			var firstTime = userElement.attempts[beginingElement];
+
+			var elapsedTime = currTime - firstTime;
+
+			//If the number of times has occured in under the acceptableGap of time. Then block. Else do nothing.
+			if (elapsedTime <= acceptableGap){
+				-- BLOCK 
+			}
+
+			else{
+			 -- DO NOTHING
+			}
+
+
+		}
+
+		
+
+
+
+
+
+	}
+
+	//Case 2B: No userElement with same ip exists. So create a new user Element
+	else{
+		-- Create new userElement
+		-- Add to incorrectAttempts.
+	}
+
+}
