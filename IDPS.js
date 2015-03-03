@@ -57,29 +57,9 @@ console.log("Time interval is "+timeInterval);
 
 //===================== HELPER FUNCTIONS ==================//
 
-function parseInformation(line){
-	
-}
+function parseInformation(line,cb){
 
-//===================== MAIN ==================//
-
-
-//
-blockedUsers.on('add',function(event){
-	console.log("The following person has been added to the blockedUsers list");
-	console.log(event);
-
-	
-});
-
-// The actual Main 
-ft.on('line', function(line) {
-    if(line.indexOf('Failed password') > -1){
-    	console.log("MATCH FOUND!");
-    	console.log(line);
-
-
-    	var re = /[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/; 
+	var re = /[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/; 
     	
     	var m;
     	var IP;
@@ -108,95 +88,116 @@ ft.on('line', function(line) {
 		    break;
 		}
 
-		console.log("The IP address is "+IP);
-		console.log("The timeStamp is "+timeStamp);
+
+		cb(IP,timeStamp);
+
+}
+
+//===================== MAIN ==================//
+
+
+//
+blockedUsers.on('add',function(event){
+	console.log("The following person has been added to the blockedUsers list");
+	console.log(event);
+
+	
+});
+
+incorrectAttempts.on('remove',function(event){
+	console.log("Element for "+event+" removed due to a successful connection attempt");
+});
+
+
+//incorrectAttempts.on('change',function(event){
+//	console.log("Change occured in incorrectAttempts, data is"+event);
+//})
+
+// The actual Main 
+ft.on('line', function(line) {
+    if(line.indexOf('Failed password') > -1){
+    	console.log("MATCH FOUND!");
+    	console.log(line);
+
+
+    	parseInformation(line,function(IP,timeStamp){
+
+
+    		console.log("The IP address is "+IP);
+			console.log("The timeStamp is "+timeStamp);
 
 
 
 		//1. Check if it's the first failure EVER
 			//Nothing in incorrectAttempts
 
-		if (incorrectAttempts.length == 0){
-			console.log("user elements is empty");
+			if (incorrectAttempts.length == 0){
+				console.log("user elements is empty");
 
-			var user = new userElement(IP);
-			user.addAttempt();
-			incorrectAttempts.push(user);
-		}
+				var user = new userElement(IP);
+				user.addAttempt();
+				incorrectAttempts.push(user);
+			}
 
 		//else, other failures HAVE occured, there are elements in incorrectAttempts[]
-		else{
-			for (var i = 0; i < incorrectAttempts.length; i++) {
-				//Check if there is a user element already existing for this offending IP
-				if(incorrectAttempts[i].IP == IP){
-					console.log("userElement already exists for IP "+IP);
+			else{
+				for (var i = 0; i < incorrectAttempts.length; i++) {
+					//Check if there is a user element already existing for this offending IP
+					if(incorrectAttempts[i].IP == IP){
+						console.log("userElement already exists for IP "+IP);
 
-					var user = incorrectAttempts[i];
+						var user = incorrectAttempts[i];
 
-					//add an attempt to his record
-					user.addAttempt(timeStamp);
+						//add an attempt to his record
+						user.addAttempt(timeStamp);
 
-					console.log("length of user attempts is now"+user.attempts.length);
+						console.log("length of user attempts is now"+user.attempts.length);
 
-					if (user.attempts.length < numAttempts){
+						if (user.attempts.length < numAttempts){
 
-						console.log("do nothing until they get to our max number of attempts because number of attemtps is at "+user.attempts.length+" and i is" + i);
+							console.log("Acceptable attempt from"+user.IP);
+
+							break;
+
+						}
+						else{
+
+							var length = user.attempts.length;
+							var currElement = length - 1;
+							var firstElement = currElement - (numAttempts - 1);
+							//Get the timestamps
+							var currTime = user.attempts[currElement];			
+							var firstTime = user.attempts[firstElement];			
+							var elapsedTime = new Date(currTime - firstTime);
+
+							//E.g if the attempts have occured within (less than) the allowed amount of time.
+								if (elapsedTime.getMinutes() < timeInterval){
+
+									console.log("BLOCK! for IP "+user.IP);
+									shell.exec("iptables -A INPUT -s "+user.IP+" -j DROP");
+									console.log("Firewall rule invoked for"+user.IP);
+									shell.exec("iptables -L");
+
+									//Take out of incorrectAttempts[]
+									delete incorrectAttempts[i];
+									console.log(user+"deleted from array to be moved into blockedUsers");
+									//Add to blockedUsers[]
+									blockedUsers.push(user);
+
+
+									
+								}
+								else{
+									console.log("Number of attempts are within the the acceptable timeInterval");
+									console.log("--------Do nothing!");
+								}
+
+								break;		
+						}
 
 						break;
 
 					}
-					else{
-
-						var length = user.attempts.length;
-						
-						var currElement = length - 1;
-
-						var firstElement = currElement - (numAttempts - 1);
-
-						//Get the timestamps
-
-						var currTime = user.attempts[currElement];			
-
-						var firstTime = user.attempts[firstElement];			
-
-						var elapsedTime = new Date(currTime - firstTime);
-					
-						
-
-
-
-						//E.g if the attempts have occured within (less than) the allowed amount of time.
-						if (elapsedTime.getMinutes() < timeInterval){
-
-							//console.log("Elapsed time is "+elapsedTime.getMinutes());
-							//console.log("Time interval is"+timeInterval);
-							//console.log("Time")
-
-							console.log("BLOCK! for IP "+user.IP);
-							shell.exec("iptables -A INPUT -s "+user.IP+" -j DROP");
-							console.log("Firewall rule invoked for"+user.IP);
-
-							shell.exec("iptables -L");
-
-							//Take out of incorrectAttempts[]
-
-							//Add to blockedUsers[]
-							blockedUsers.push(user);
-
-
-							
-						}
-						else{
-							console.log("Number of attempts are within the the acceptable timeInterval");
-							console.log("--------Do nothing!");
-						}
-
-						break;		
-					}
-
-					break;
-
-				}
 
 					//a userElement doesn't exist for this connection
 					else{
@@ -210,12 +211,27 @@ ft.on('line', function(line) {
 				} //End for loop 
 
 			} //End else
-		}
 
-		//Accepted Password
+    	});
+	}
 
-	  if(line.indexOf('Accepted password for root') > -1){
+	//Accepted Password
 
-	  }
+	if(line.indexOf('Accepted password for root') > -1){
 
-    });
+		console.log("Successful attempt logged");
+		parseInformation(line,function(IP,timeStamp){
+
+			for (var i = 0; i < incorrectAttempts.length; i++) {
+				if(incorrectAttempts[i].IP == IP){
+					incorrectAttempts[i].attempts = [];
+					console.log("incorrectAttempts for "+IP+"cleared due to a successful attempt");
+				}
+			};
+
+		});
+
+
+	}
+
+});
