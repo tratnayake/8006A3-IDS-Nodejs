@@ -17,6 +17,7 @@ var fs = require('fs');
 var ft = require('file-tail').startTailing("/var/log/secure");
 var shell = require('shelljs');
 var EventedArray = require('array-events');
+var winston = require('winston');
 
 
 //=====================DATA STRUCTURES ==============//
@@ -36,23 +37,52 @@ function userElement(IP) {
 // class methods
 userElement.prototype.addAttempt = function() {
 	var timeStamp = new Date();
-	console.log("addAttempt invoked with data"+timeStamp);
+	logger.info("addAttempt invoked with data"+timeStamp);
 	this.attempts.push(timeStamp);
-	console.log(this.attempts);
+	logger.info(this.attempts);
 };
 // export the class
 module.exports = userElement;
 
+
+//===================== LOGFILE SETUP ==================//
+
+ var logDate = new Date();
+ //logger.info("The date for logfile is "+logDate);
+
+var logFileName = __dirname+"/logfiles/"+logDate+".log";
+console.log ("log file is being saved @"+logFileName);
+
+fs.writeFileSync(logFileName);
+
+//logger.info("Log file ready to write to @" +logFileName);
+
+
+
+var logger = new (winston.Logger)({
+    transports: [
+      new (winston.transports.Console)(),
+      new (winston.transports.File)({ 
+      	level:"info",
+      	filename: logFileName,
+      	json: false })
+    ]
+  });
+
+logger.log('info', 'IDPS Started!');
+logger.info('---Built by T Ratnayake and Elton Sia. Keeping you safe from SSH logins since 2015...\n\n');
 //===================== USER INPUT ==================//
 //Grab command line arguments
 var arguments = process.argv.slice(2);
 
 //Number of logins to block after
 var numAttempts = arguments[0];
-console.log("The number of attempts to block after is "+numAttempts);
+logger.info("The number of attempts to block after is "+numAttempts);
 //Number of time interval to check for
 var timeInterval = arguments[1];
-console.log("Time interval is "+timeInterval);
+logger.info("Time interval is "+timeInterval);
+
+
 
 
 //===================== HELPER FUNCTIONS ==================//
@@ -98,33 +128,33 @@ function parseInformation(line,cb){
 
 //
 blockedUsers.on('add',function(event){
-	console.log("The following person has been added to the blockedUsers list");
-	console.log(event);
+	logger.info("The following person has been added to the blockedUsers list");
+	logger.info(event);
 
 	
 });
 
 incorrectAttempts.on('remove',function(event){
-	console.log("Element for "+event+" removed due to a successful connection attempt");
+	logger.info("Element for "+event+" removed due to a successful connection attempt");
 });
 
 
 //incorrectAttempts.on('change',function(event){
-//	console.log("Change occured in incorrectAttempts, data is"+event);
+//	logger.info("Change occured in incorrectAttempts, data is"+event);
 //})
 
 // The actual Main 
 ft.on('line', function(line) {
     if(line.indexOf('Failed password') > -1){
-    	console.log("MATCH FOUND!");
-    	console.log(line);
+    	logger.info("MATCH FOUND!");
+    	logger.info(line);
 
 
     	parseInformation(line,function(IP,timeStamp){
 
 
-    		console.log("The IP address is "+IP);
-			console.log("The timeStamp is "+timeStamp);
+    		logger.info("The IP address is "+IP);
+			logger.info("The timeStamp is "+timeStamp);
 
 
 
@@ -132,7 +162,7 @@ ft.on('line', function(line) {
 			//Nothing in incorrectAttempts
 
 			if (incorrectAttempts.length == 0){
-				console.log("user elements is empty");
+				logger.info("user elements is empty");
 
 				var user = new userElement(IP);
 				user.addAttempt();
@@ -144,18 +174,18 @@ ft.on('line', function(line) {
 				for (var i = 0; i < incorrectAttempts.length; i++) {
 					//Check if there is a user element already existing for this offending IP
 					if(incorrectAttempts[i].IP == IP){
-						console.log("userElement already exists for IP "+IP);
+						logger.info("userElement already exists for IP "+IP);
 
 						var user = incorrectAttempts[i];
 
 						//add an attempt to his record
 						user.addAttempt(timeStamp);
 
-						console.log("length of user attempts is now"+user.attempts.length);
+						logger.info("length of user attempts is now"+user.attempts.length);
 
 						if (user.attempts.length < numAttempts){
 
-							console.log("Acceptable attempt from"+user.IP);
+							logger.info("Acceptable attempt from"+user.IP);
 
 							break;
 
@@ -173,14 +203,14 @@ ft.on('line', function(line) {
 							//E.g if the attempts have occured within (less than) the allowed amount of time.
 								if (elapsedTime.getMinutes() < timeInterval){
 
-									console.log("BLOCK! for IP "+user.IP);
+									logger.info("BLOCK! for IP "+user.IP);
 									shell.exec("iptables -A INPUT -s "+user.IP+" -j DROP");
-									console.log("Firewall rule invoked for"+user.IP);
+									logger.info("Firewall rule invoked for"+user.IP);
 									shell.exec("iptables -L");
 
 									//Take out of incorrectAttempts[]
 									delete incorrectAttempts[i];
-									console.log(user+"deleted from array to be moved into blockedUsers");
+									logger.info(user+"deleted from array to be moved into blockedUsers");
 									//Add to blockedUsers[]
 									blockedUsers.push(user);
 
@@ -188,8 +218,10 @@ ft.on('line', function(line) {
 									
 								}
 								else{
-									console.log("Number of attempts are within the the acceptable timeInterval");
-									console.log("--------Do nothing!");
+
+
+									logger.info("Number of attempts are within the the acceptable timeInterval");
+									logger.info("--------Do nothing!");
 								}
 
 								break;		
@@ -219,13 +251,13 @@ ft.on('line', function(line) {
 
 	if(line.indexOf('Accepted password for root') > -1){
 
-		console.log("Successful attempt logged");
+		logger.info("Successful attempt logged");
 		parseInformation(line,function(IP,timeStamp){
 
 			for (var i = 0; i < incorrectAttempts.length; i++) {
 				if(incorrectAttempts[i].IP == IP){
 					incorrectAttempts[i].attempts = [];
-					console.log("incorrectAttempts for "+IP+"cleared due to a successful attempt");
+					logger.info("incorrectAttempts for "+IP+"cleared due to a successful attempt");
 				}
 			};
 
