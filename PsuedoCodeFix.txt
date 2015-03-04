@@ -1,4 +1,4 @@
-//Data Structure
+//Data Structures
 
 var incorrectAttempts = [userElement]
 
@@ -11,6 +11,7 @@ userElement = {"IP":IPaddress,attempts["timeStamp"]}
 //Case 1: FIRST TIME Incorrect Attempt (no entries in the array of userElements)
 
 if length of attempts = 0 {
+	--create userElement
 	addAttempt(timeStamp);
 }
 	
@@ -35,7 +36,7 @@ else{
 
 			var length = userElement.attempts.length;
 			var currElement = length-1;
-			var beginningElement = currElement -5;
+			var beginningElement = currElement -numAttempts;
 
 			//Get the timeStamps
 			var currTime =  userElement.attempts[currElement];
